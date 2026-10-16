@@ -1,0 +1,47 @@
+{
+  "$schema": "/home/agent/.config/opencode/skills/plugin/open-bot.plugin.schema.json",
+  "id": "voice-agent",
+  "name": "Voice Agent",
+  "version": "beta-11",
+  "description": "Real-time speech-to-speech voice agent as a dashboard tab: press connect, talk out loud, it hears and answers by voice. Browser only, no phone system needed. Includes a call log. First provider: xAI Grok Voice (OpenAI Realtime and Gemini Live planned).",
+  "author": "shpaw415",
+  "repo": "shpaw415/voice-agent",
+  "category": "voice",
+  "tags": ["voice", "speech", "realtime", "assistant", "audio"],
+  "permissions": {
+    "vaultRead": ["xai"],
+    "vaultCreate": ["xai-api-key"]
+  },
+  "configs": [
+    { "key": "provider", "label": "Speech-to-speech provider", "type": "enum", "def": "xai", "options": ["xai"] },
+    { "key": "model", "label": "Realtime model", "def": "grok-voice-latest" },
+    { "key": "voice", "label": "Agent voice (provider voice name)", "def": "eve" },
+    { "key": "instructions", "label": "Agent instructions (system prompt)", "def": "You are a friendly, concise voice assistant. Always detect the language the user speaks and answer in that same language. Keep answers short and natural for spoken conversation. You have a delegate_openbot tool connected to the user's open-bot desktop agent: when the caller asks for something that needs real actions or live information, briefly announce it, call the tool with a clear self-contained task, then speak the result naturally." },
+    { "key": "capabilities", "label": "What the open-bot agent can do (told to the voice agent)", "def": "search the web and read pages, automate a desktop browser, read and write files on the desktop, generate images and videos, build 3D models, write and run code, create schedules and recurring jobs, and use installed plugins (price watching, shared calendar, Facebook messages guardian, news trading, web search). It cannot make phone calls or access accounts the user has not connected." },
+    { "key": "delegate_agent", "label": "opencode agent used for delegation (blank = default)", "def": "" },
+    { "key": "delegate_timeout", "label": "Delegation timeout in seconds", "type": "number", "def": "240", "min": 30, "max": 600 },
+    { "key": "xai_api_key", "label": "xAI API key (or fill vault slug xai-api-key)", "type": "secret", "def": "" },
+    { "key": "gateway_base", "label": "API gateway base URL override (blank = provider default)", "def": "" }
+  ],
+  "files": [
+    { "name": "index.html", "source": "server/index.html", "exec": false },
+    { "name": "app.ts", "source": "server/app.ts", "exec": false },
+    { "name": "styles.css", "source": "server/styles.css", "exec": false },
+    { "name": "server", "source": "server/server.ts", "exec": true },
+    { "name": "status", "source": "status/status.ts", "exec": true },
+    { "name": "delegate-worker", "source": "delegate/worker.ts", "exec": true }
+  ],
+  "dashboard": {
+    "pages": { "entry": "server", "ui": "server/index.html" },
+    "tabs": [
+      { "id": "agent", "title": "Voice Agent", "icon": "mic", "kind": "app" }
+    ]
+  },
+  "skills": [
+    {
+      "name": "voice-agent",
+      "description": "Use when the user wants to talk to the agent by voice from the dashboard, asks to set up, configure or troubleshoot the Voice Agent plugin, or mentions calling/asking the voice agent. Always answer in the user's language.",
+      "body": "# Voice Agent (speech-to-speech dashboard agent)\n\nThe user has a real-time voice agent as a dashboard tab (**Dashboards → Voice Agent**). It connects the browser microphone straight to a speech-to-speech model (xAI Grok Voice, `grok-voice-latest`) over a WebSocket with a short-lived ephemeral token. No STT/TTS pipeline, no phone system. A call log is kept on the same tab.\n\n## Check status\n\nRun `ob-plugin-voice-agent-status` (installed on PATH). It prints JSON: `hasKey`, `keySource`, `provider`, `model`, `voice`, plus a `hint`. Never print any key value.\n\n## If not configured (hasKey false)\n\nThe plugin reuses the shared xAI key from the Config page Keys tab automatically (slug `xai`). If `hasKey` is still false, guide the user, in their language:\n\n1. Dashboard → Config page → Keys tab: add their xAI API key (slug `xai`) — this also serves other xAI features, or\n2. Dashboard → Plugins tab → Voice Agent → Settings: paste the key in “xAI API key”, or fill the vault slug `xai-api-key` under Vault keys.\n3. Re-run the status tool to confirm `hasKey: true` (`keySource` tells you where it was found).\n\n## If configured\n\nTell the user to open **Dashboards → Voice Agent**. Normal use: press the round button, talk, press again to hang up. **Hands-free**: press the “Hands-free” button once — the agent connects, stays with you (talk, pause, it answers, reconnects on drops), until you press “Stop hands-free”. The first call asks for microphone permission. Speech runs continuously with server-side turn detection, so no push-to-talk is needed.\n\n## When the user reports problems\n\n- No sound: the tab or system is muted, or the configured `voice` name does not exist for the provider — try `eve`.\n- Connects but never answers: check the key is a valid xAI API key (console.x.ai) and that the machine can reach `api.x.ai`.\n- Session error in the page: check the model name in settings (`grok-voice-latest`).\n\n## Language rule (mandatory)\n\nAlways answer the user in the language they are using — never a hardcoded default. The voice agent itself is instructed to auto-detect the caller's language and answer in it; only change that through the `instructions` setting, never by hardcoding a language in code.\n\n## Notes\n\n- Audio flows browser → provider directly (WebSocket, ephemeral token). The plugin server only mints tokens and keeps the call log, so calls keep working under load.\n- The dashboard page detects the browser language for its UI labels (en/fr/es/de) — this is display convenience, not a behavior lock.\n- Roadmap providers: OpenAI Realtime, Google Gemini Live (the `provider` setting is ready for new enum values).\n"
+    }
+  ]
+}
