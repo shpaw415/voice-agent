@@ -231,7 +231,7 @@ await setAndWait("xai_api_key", "");
 await setAndWait("gateway_base", "");
 await new Promise((r) => setTimeout(r, 300));
 const stF = await j("/api/status");
-ok(stF.body.hasKey === sharedAvailable, "settings restored: key state back to shared availability", JSON.stringify(stF.body));
+ok(stF.body.hasKey === sharedAvailable && stF.body.keySource === (sharedAvailable ? "shared:xai" : ""), "settings restored: key state back to shared availability", JSON.stringify(stF.body));
 
 mock.stop(true);
 console.log(`\ne2e: ${pass} pass, ${fail} fail`);
